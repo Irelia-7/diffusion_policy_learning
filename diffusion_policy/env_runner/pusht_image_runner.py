@@ -33,7 +33,7 @@ class PushTImageRunner(BaseImageRunner):
             fps=10,
             crf=22,
             render_size=96,
-            past_action=False,
+            past_action=True,
             tqdm_interval_sec=5.0,
             n_envs=None
         ):
@@ -41,9 +41,11 @@ class PushTImageRunner(BaseImageRunner):
         if n_envs is None:
             n_envs = n_train + n_test
 
+        # create envs
         steps_per_render = max(10 // fps, 1)
         def env_fn():
             return MultiStepWrapper(
+                # video record
                 VideoRecordingWrapper(
                     PushTImageEnv(
                         legacy=legacy_test,
@@ -69,6 +71,15 @@ class PushTImageRunner(BaseImageRunner):
         env_seeds = list()
         env_prefixs = list()
         env_init_fn_dills = list()
+
+        # log
+        # print(type(env_fns[0])) # n * function -- ???
+        print("----- Environment Setup -----")
+        print("n_obs_steps: {}, n_action_steps: {}".format(n_obs_steps, n_action_steps))
+        print("n_train: {},     n_test: {}".format(n_train, n_test))
+        print("max_step: {}".format(max_steps))
+
+        # cfg of video output
         # train
         for i in range(n_train):
             seed = train_start_seed + i
@@ -120,6 +131,10 @@ class PushTImageRunner(BaseImageRunner):
             env_seeds.append(seed)
             env_prefixs.append('test/')
             env_init_fn_dills.append(dill.dumps(init_fn))
+        
+        #print(env_prefixs)
+        #print(env_init_fn_dills)
+        #print(output_dir)
 
         env = AsyncVectorEnv(env_fns)
 
@@ -173,14 +188,16 @@ class PushTImageRunner(BaseImageRunner):
             env.call_each('run_dill_function', 
                 args_list=[(x,) for x in this_init_fns])
 
-            # start rollout
+            # start rollout (start inference)
+            print("========================== Action Prediction ==========================")
             obs = env.reset()
             past_action = None
             policy.reset()
 
-            pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval PushtImageRunner {chunk_idx+1}/{n_chunks}", 
-                leave=False, mininterval=self.tqdm_interval_sec)
+            # pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval PushtImageRunner {chunk_idx+1}/{n_chunks}", 
+            #     leave=False, mininterval=self.tqdm_interval_sec)
             done = False
+            round = 1
             while not done:
                 # create obs dict
                 np_obs_dict = dict(obs)
@@ -188,11 +205,17 @@ class PushTImageRunner(BaseImageRunner):
                     # TODO: not tested
                     np_obs_dict['past_action'] = past_action[
                         :,-(self.n_obs_steps-1):].astype(np.float32)
-                
+
                 # device transfer
                 obs_dict = dict_apply(np_obs_dict, 
                     lambda x: torch.from_numpy(x).to(
                         device=device))
+                
+                # log input
+                print("----- Observation #{} -----".format(round))
+                print("content: ")
+                for key, value in obs_dict.items():
+                    print("  {}: {}".format(key, value.shape))
 
                 # run policy
                 with torch.no_grad():
@@ -203,15 +226,26 @@ class PushTImageRunner(BaseImageRunner):
                     lambda x: x.detach().to('cpu').numpy())
 
                 action = np_action_dict['action']
+                # log action
+                print("----- Action #{} -----".format(round))
+                print(action.shape)
 
                 # step env
                 obs, reward, done, info = env.step(action)
                 done = np.all(done)
                 past_action = action
+                round += 1
 
                 # update pbar
-                pbar.update(action.shape[1])
-            pbar.close()
+            #     pbar.update(action.shape[1])
+            # pbar.close()
+
+            # log
+            # print("----- Observation {} -----".format(round))
+            # print("type: {}".format(type(obs_dict)))
+            # print("content: ")
+            # for key, value in obs_dict.items():
+            #     print("  {}: {}".format(key, value.shape))
 
             all_video_paths[this_global_slice] = env.render()[this_local_slice]
             all_rewards[this_global_slice] = env.call('get_attr', 'reward')[this_local_slice]
