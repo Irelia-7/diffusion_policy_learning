@@ -7,6 +7,7 @@ models
 data_local
 .vscode
 _wandb
+diffusion_policy_vision_pusht_demo.ipynb
 
 **/.DS_Store
 
