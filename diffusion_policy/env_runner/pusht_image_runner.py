@@ -212,8 +212,8 @@ class PushTImageRunner(BaseImageRunner):
                         device=device))
                 
                 # log input
-                print("----- Observation #{} -----".format(round))
-                print("content: ")
+                print("----- Step #{} -----".format(round))
+                print("Observation: ")
                 for key, value in obs_dict.items():
                     print("  {}: {}".format(key, value.shape))
 
@@ -226,15 +226,17 @@ class PushTImageRunner(BaseImageRunner):
                     lambda x: x.detach().to('cpu').numpy())
 
                 action = np_action_dict['action']
+
                 # log action
-                print("----- Action #{} -----".format(round))
-                print(action.shape)
+                print("Action: {}".format(action.shape))
+                print('\n')
 
                 # step env
                 obs, reward, done, info = env.step(action)
                 done = np.all(done)
                 past_action = action
                 round += 1
+                done = True
 
                 # update pbar
             #     pbar.update(action.shape[1])
