@@ -1,6 +1,7 @@
 from typing import Dict, Tuple
 import math
 import torch
+import time
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, reduce
@@ -198,21 +199,25 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
     
         # set step values
         scheduler.set_timesteps(self.num_inference_steps)
-        print(scheduler.timesteps)
+        # print(scheduler.timesteps)
+        with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA]) as prof:
+            for t in scheduler.timesteps:
+                # 1. apply conditioning
+                trajectory[condition_mask] = condition_data[condition_mask]
 
-        for t in scheduler.timesteps:
-            # 1. apply conditioning
-            trajectory[condition_mask] = condition_data[condition_mask]
-
-            # 2. predict model output
-            model_output = model(trajectory, t, cond)
-            break
-            # 3. compute previous image: x_t -> x_t-1
-            trajectory = scheduler.step(
-                model_output, t, trajectory, 
-                generator=generator,
-                **kwargs
-                ).prev_sample
+                # 2. predict model output
+                model_output = model(trajectory, t, cond)
+                # print("transformer output: {}".format(model_output.shape))
+                # print("generator: {}". format(generator))
+                # 3. compute previous image: x_t -> x_t-1
+                trajectory = scheduler.step(
+                    model_output, t, trajectory, 
+                    generator=generator,
+                    **kwargs
+                    ).prev_sample
+        print(prof.key_averages().table(sort_by="self_cuda_time_total"))
+        print(prof)
+        
         
         # condition_mask is all False
         # finally make sure conditioning is enforced
@@ -235,7 +240,7 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
         Da = self.action_dim
         Do = self.obs_feature_dim
         To = self.n_obs_steps
-        print("B: {}".format(B))
+        # print("B: {}".format(B))
         # print("encode: {}".format(self.obs_encoder))
 
         # build input
@@ -269,17 +274,17 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
             cond_mask[:,:To,Da:] = True
 
         # log input
-        print("nobs: {}".format(type(nobs)))
-        print("value: {} {}".format(value.shape, type(value)))
-        print("this_nobs: {}".format(type(this_nobs)))
-        print("nobs_features: {} {}".format(nobs_features.shape, type(nobs_features)))
-        print(" ")
-        print("final input: ")
-        print("  cond: {} {}".format(cond.shape, type(cond)))
-        print("  cond_data: {} {}".format(cond_data.shape, type(cond_data)))
-        print("  cond_mask: {} {}".format(cond_mask.shape, type(cond_mask)))
-        print(" ")
-        
+        # print("nobs: {}".format(type(nobs)))
+        # print("value: {} {}".format(value.shape, type(value)))
+        # print("this_nobs: {}".format(type(this_nobs)))
+        # print("nobs_features: {} {}".format(nobs_features.shape, type(nobs_features)))
+        # print(" ")
+        # print("final input: ")
+        # print("  cond: {} {}".format(cond.shape, type(cond)))
+        # print("  cond_data: {} {}".format(cond_data.shape, type(cond_data)))
+        # print("  cond_mask: {} {}".format(cond_mask.shape, type(cond_mask)))
+        # print(" ")
+
         # run sampling
         nsample = self.conditional_sample(
             cond_data, 

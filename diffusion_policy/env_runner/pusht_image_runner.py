@@ -6,6 +6,7 @@ import pathlib
 import tqdm
 import dill
 import math
+import time
 import wandb.sdk.data_types.video as wv
 from diffusion_policy.env.pusht.pusht_image_env import PushTImageEnv
 from diffusion_policy.gym_util.async_vector_env import AsyncVectorEnv
@@ -212,14 +213,17 @@ class PushTImageRunner(BaseImageRunner):
                         device=device))
                 
                 # log input
-                print("----- Step #{} -----".format(round))
-                print("Observation: ")
-                for key, value in obs_dict.items():
-                    print("  {}: {}".format(key, value.shape))
+                # print("----- Step #{} -----".format(round))
+                # print("Observation: ")
+                # for key, value in obs_dict.items():
+                #     print("  {}: {}".format(key, value.shape))
 
                 # run policy
+                startt = time.time()
                 with torch.no_grad():
-                    action_dict = policy.predict_action(obs_dict)
+                    action_dict = policy.predict_action(obs_dict) 
+                endt = time.time()
+                print("\n {} \n".format(endt-startt))
 
                 # device_transfer
                 np_action_dict = dict_apply(action_dict,
@@ -228,8 +232,8 @@ class PushTImageRunner(BaseImageRunner):
                 action = np_action_dict['action']
 
                 # log action
-                print("Action: {}".format(action.shape))
-                print('\n')
+                # print("Action: {}".format(action.shape))
+                # print('\n')
 
                 # step env
                 obs, reward, done, info = env.step(action)

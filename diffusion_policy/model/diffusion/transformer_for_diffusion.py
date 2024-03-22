@@ -79,6 +79,7 @@ class TransformerForDiffusion(ModuleAttrMixin):
                     nn.Linear(4 * n_emb, n_emb)
                 )
             # decoder
+            # print("d_dropout_attn: {}".format(p_drop_attn))
             decoder_layer = nn.TransformerDecoderLayer(
                 d_model=n_emb,
                 nhead=n_head,
@@ -279,7 +280,7 @@ class TransformerForDiffusion(ModuleAttrMixin):
         """
         # 1. time
         timesteps = timestep
-        print("timestep: {}".format(timestep))
+        # print("timestep: {}".format(timestep))
         if not torch.is_tensor(timesteps):
             # TODO: this requires sync between CPU and GPU. So try to pass timesteps as tensors if you can
             timesteps = torch.tensor([timesteps], dtype=torch.long, device=sample.device)
@@ -287,14 +288,14 @@ class TransformerForDiffusion(ModuleAttrMixin):
             timesteps = timesteps[None].to(sample.device)
         # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
         timesteps = timesteps.expand(sample.shape[0])
-        print("timesteps: {}".format(timesteps))
+        # print("timesteps: {}".format(timesteps))
         time_emb = self.time_emb(timesteps).unsqueeze(1)
-        print("time_emb: {}".format(time_emb.shape))
+        # print("time_emb: {}".format(time_emb.shape))
         # (B,1,n_emb)
 
         # process input
         input_emb = self.input_emb(sample)
-        print("input_emb: {}".format(input_emb.shape))
+        # print("input_emb: {}".format(input_emb.shape))
         # print("encoder_only: {}".format(self.encoder_only))
         # self.encoder_only = False
 
@@ -318,37 +319,37 @@ class TransformerForDiffusion(ModuleAttrMixin):
                 cond_obs_emb = self.cond_obs_emb(cond)
                 # (B,To,n_emb)
                 cond_embeddings = torch.cat([cond_embeddings, cond_obs_emb], dim=1)
-            print(" ")
-            print("----- Encoder -----")
-            print("conda_obs_emb: {}".format(cond_obs_emb.shape))
-            print("cond_embeddings: {}".format(cond_embeddings.shape))
+            # print(" ")
+            # print("----- Encoder -----")
+            # print("conda_obs_emb: {}".format(cond_obs_emb.shape))
+            # print("cond_embeddings: {}".format(cond_embeddings.shape))
             tc = cond_embeddings.shape[1]
             position_embeddings = self.cond_pos_emb[
                 :, :tc, :
             ]  # each position maps to a (learnable) vector
-            print("position_embeddings: {}".format(position_embeddings.shape))
-            # x = self.drop(cond_embeddings + position_embeddings)
-            x = cond_embeddings + position_embeddings
+            # print("position_embeddings: {}".format(position_embeddings.shape))
+            x = self.drop(cond_embeddings + position_embeddings)
             x = self.encoder(x)
             memory = x
             # (B,T_cond,n_emb)
-            print("memory: {}".format(memory.shape))
+            # print("memory: {}".format(memory.shape))
+            # print("encoder: {}".format(self.encoder))
 
             # decoder
             token_embeddings = input_emb
-            print(" ")
-            print("----- Decoder -----")
-            print("token_embeddings: {}".format(token_embeddings.shape))
+            # print(" ")
+            # print("----- Decoder -----")
+            # print("token_embeddings: {}".format(token_embeddings.shape))
             t = token_embeddings.shape[1]
             position_embeddings = self.pos_emb[
                 :, :t, :
             ]  # each position maps to a (learnable) vector
-            print("position_embeddings: {}".format(position_embeddings.shape))
+            # print("position_embeddings: {}".format(position_embeddings.shape))
             x = self.drop(token_embeddings + position_embeddings)
             # (B,T,n_emb)
-            print("x: {}".format(x.shape))
-            print("tgt_mask: {}".format(self.mask.shape))
-            print("memory_mask: {}".format(self.memory_mask.shape))
+            # print("x: {}".format(x.shape))
+            # print("tgt_mask: {}".format(self.mask.shape))
+            # print("memory_mask: {}".format(self.memory_mask.shape))
             x = self.decoder(
                 tgt=x,
                 memory=memory,
@@ -356,13 +357,15 @@ class TransformerForDiffusion(ModuleAttrMixin):
                 memory_mask=self.memory_mask
             )
             # (B,T,n_emb)
-            print("result_0: {}".format(x.shape))
+            # print("decoder: {}".format(self.decoder))
+            # print("result_0: {}".format(x.shape))
         
+        # print("\n----- Head -----")
         # head
         x = self.ln_f(x)
-        print("ln_f: {}".format(x.shape))
+        # print("ln_f: {}".format(x.shape))
         x = self.head(x)
-        print("head: {}".format(x.shape))
+        # print("head: {}".format(x.shape))
         # (B,T,n_out)
         return x
 
