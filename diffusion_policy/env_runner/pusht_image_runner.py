@@ -200,6 +200,7 @@ class PushTImageRunner(BaseImageRunner):
             done = False
             round = 1
             while not done:
+                startt = time.time()
                 # create obs dict
                 np_obs_dict = dict(obs)
                 if self.past_action and (past_action is not None):
@@ -217,13 +218,17 @@ class PushTImageRunner(BaseImageRunner):
                 # print("Observation: ")
                 # for key, value in obs_dict.items():
                 #     print("  {}: {}".format(key, value.shape))
+                # print(type(obs_dict))
 
                 # run policy
-                startt = time.time()
                 with torch.no_grad():
                     action_dict = policy.predict_action(obs_dict) 
-                endt = time.time()
-                print("\n {} \n".format(endt-startt))
+                print("Latency: {} \n".format(time.time()-startt))
+
+                # print("action_pred: ")
+                # for key, value in action_dict.items():
+                #     print("  {}: {}".format(key, value.shape))
+                # print(type(action_dict))
 
                 # device_transfer
                 np_action_dict = dict_apply(action_dict,
@@ -240,7 +245,7 @@ class PushTImageRunner(BaseImageRunner):
                 done = np.all(done)
                 past_action = action
                 round += 1
-                done = True
+                break
 
                 # update pbar
             #     pbar.update(action.shape[1])
