@@ -109,7 +109,7 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
             )
 
         obs_encoder = policy.nets['policy'].nets['encoder'].nets['obs']
-        print(policy.nets['policy'].nets['encoder'].nets['obs'])
+        # print(policy.nets['policy'].nets['encoder'].nets['obs'])
         if obs_encoder_group_norm:
             # replace batch norm with group norm
             replace_submodules(
@@ -199,25 +199,29 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
             generator=generator)
     
         # set step values
+        print(f"timesteps: {self.num_inference_steps}")
         scheduler.set_timesteps(self.num_inference_steps)
-        print("timesteps: {}".format(scheduler.timesteps))
-        # with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA]) as prof:
-        for t in scheduler.timesteps:
-            # 1. apply conditioning
-            trajectory[condition_mask] = condition_data[condition_mask]
+        with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA]) as prof:
+            for t in scheduler.timesteps:
+                # 1. apply conditioning
+                trajectory[condition_mask] = condition_data[condition_mask]
 
-            # 2. predict model output
-            model_output = model(trajectory, t, cond)
-            # print("transformer output: {}".format(model_output.shape))
-            # print("generator: {}". format(generator))
-            # 3. compute previous image: x_t -> x_t-1
-            trajectory = scheduler.step(
-                model_output, t, trajectory, 
-                generator=generator,
-                **kwargs
-                ).prev_sample
-        # print(prof.key_averages().table(sort_by="self_cuda_time_total"))
-        # print(prof)
+                # 2. predict model output
+                # start_time = time.monotonic()
+                model_output = model(trajectory, t, cond)
+                # model_time = time.monotonic()
+                # print(f"model_time: {model_time - start_time}")
+                # print("transformer output: {}".format(model_output.shape))
+                # print("generator: {}". format(generator))
+
+                # 3. compute previous image: x_t -> x_t-1
+                trajectory = scheduler.step(
+                    model_output, t, trajectory, 
+                    generator=generator,
+                    **kwargs
+                    ).prev_sample
+        print(prof.key_averages().table(sort_by="self_cuda_time_total"))
+        print(prof)
         
         
         # condition_mask is all False
@@ -233,8 +237,7 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
         result: must include "action" key
         """
         assert 'past_action' not in obs_dict # not implemented yet
-        torch.cuda.synchronize()
-        start_1 = time.time()
+
         # normalize input
         nobs = self.normalizer.normalize(obs_dict)
         value = next(iter(nobs.values()))
@@ -254,8 +257,7 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
         cond = None
         cond_data = None
         cond_mask = None
-        torch.cuda.synchronize()
-        start_3 = time.time()
+
         if self.obs_as_cond:
             this_nobs = dict_apply(nobs, lambda x: x[:,:To,...].reshape(-1,*x.shape[2:]))
             nobs_features = self.obs_encoder(this_nobs) # TODO
@@ -277,11 +279,6 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
             cond_mask = torch.zeros_like(cond_data, dtype=torch.bool)
             cond_data[:,:To,Da:] = nobs_features
             cond_mask[:,:To,Da:] = True
-        
-        torch.cuda.synchronize()
-        end_1 = time.time()
-        print("input_proc cuda time: {}".format(end_1-start_1))
-        print("encoder cuda time: {}".format(end_1-start_3))
 
         # log input
         # print("nobs: {}".format(type(nobs)))
@@ -295,17 +292,15 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
         # print("  cond_mask: {} {}".format(cond_mask.shape, type(cond_mask)))
         # print(" ")
 
-        torch.cuda.synchronize()
-        start_2 = time.time()
+        start_time = time.monotonic()
         # run sampling
         nsample = self.conditional_sample(
             cond_data, 
             cond_mask,
             cond=cond,
             **self.kwargs)
-        torch.cuda.synchronize()
-        end_2 = time.time()
-        print("diffusion cuda time: {}".format(end_2-start_2))
+        sample_time = time.monotonic()
+        print("sample time: {}".format(sample_time - start_time))
         
         # unnormalize prediction
         naction_pred = nsample[...,:Da]

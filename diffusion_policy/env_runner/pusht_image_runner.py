@@ -198,7 +198,7 @@ class PushTImageRunner(BaseImageRunner):
             # pbar = tqdm.tqdm(total=self.max_steps, desc=f"Eval PushtImageRunner {chunk_idx+1}/{n_chunks}", 
             #     leave=False, mininterval=self.tqdm_interval_sec)
             done = False
-            round = 1
+            round = 0
             while not done:
                 startt = time.time()
                 # create obs dict
@@ -245,7 +245,8 @@ class PushTImageRunner(BaseImageRunner):
                 done = np.all(done)
                 past_action = action
                 round += 1
-                break
+                done = round > 2
+                print(f"Round: {round}, Done: {done}")
 
                 # update pbar
             #     pbar.update(action.shape[1])

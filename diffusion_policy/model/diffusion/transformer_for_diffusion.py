@@ -80,6 +80,8 @@ class TransformerForDiffusion(ModuleAttrMixin):
                 )
             # decoder
             # print("d_dropout_attn: {}".format(p_drop_attn))
+            print("------ Decoder_Layer ------")
+            print(f"d_model: {n_emb}, nhead: {n_head}, dropout: {p_drop_attn}\n")
             decoder_layer = nn.TransformerDecoderLayer(
                 d_model=n_emb,
                 nhead=n_head,
@@ -348,7 +350,7 @@ class TransformerForDiffusion(ModuleAttrMixin):
             x = self.drop(token_embeddings + position_embeddings)
             # (B,T,n_emb)
             # print("x: {}".format(x.shape))
-            # print("tgt_mask: {}".format(self.mask.shape))
+            # print("memory: {}".format(memory.shape))
             # print("memory_mask: {}".format(self.memory_mask.shape))
             x = self.decoder(
                 tgt=x,
