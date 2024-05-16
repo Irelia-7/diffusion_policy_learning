@@ -3,11 +3,13 @@ logs
 wandb
 outputs
 data
+config
 models
 data_local
 .vscode
 _wandb
 diffusion_policy_vision_pusht_demo.ipynb
+pusht_transformer_learn.ipynb
 
 **/.DS_Store
 
