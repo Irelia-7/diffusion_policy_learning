@@ -64,7 +64,7 @@ class TransformerForDiffusion(ModuleAttrMixin):
                     nhead=n_head,
                     dim_feedforward=4*n_emb,
                     dropout=p_drop_attn,
-                    activation='gelu',
+                    activation='relu',
                     batch_first=True,
                     norm_first=True
                 )
@@ -87,7 +87,7 @@ class TransformerForDiffusion(ModuleAttrMixin):
                 nhead=n_head,
                 dim_feedforward=4*n_emb,
                 dropout=p_drop_attn,
-                activation='gelu',
+                activation='relu',
                 batch_first=True,
                 norm_first=True # important for stability
             )
@@ -104,7 +104,7 @@ class TransformerForDiffusion(ModuleAttrMixin):
                 nhead=n_head,
                 dim_feedforward=4*n_emb,
                 dropout=p_drop_attn,
-                activation='gelu',
+                activation='relu',
                 batch_first=True,
                 norm_first=True
             )
