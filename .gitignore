@@ -8,8 +8,10 @@ models
 data_local
 .vscode
 _wandb
-diffusion_policy_vision_pusht_demo.ipynb
+
+# learning
 pusht_transformer_learn.ipynb
+test.py
 
 **/.DS_Store
 
