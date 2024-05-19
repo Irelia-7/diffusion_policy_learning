@@ -62,7 +62,8 @@ class TrainDiffusionTransformerHybridWorkspace(BaseWorkspace):
 
         # resume training
         if cfg.training.resume:
-            lastest_ckpt_path = self.get_checkpoint_path()
+            # lastest_ckpt_path = self.get_checkpoint_path()
+            lastest_ckpt_path = "/home/shuyuan-19/project/diffusion_policy_learning/models/pre_trained/epoch=0150-test_mean_score=0.752.ckpt"
             if lastest_ckpt_path.is_file():
                 print(f"Resuming from checkpoint {lastest_ckpt_path}")
                 self.load_checkpoint(path=lastest_ckpt_path)
