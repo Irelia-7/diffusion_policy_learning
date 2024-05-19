@@ -75,10 +75,10 @@ class PushTImageRunner(BaseImageRunner):
 
         # log
         # print(type(env_fns[0])) # n * function -- ???
-        print("----- Environment Setup -----")
-        print("n_obs_steps: {}, n_action_steps: {}".format(n_obs_steps, n_action_steps))
-        print("n_train: {},     n_test: {}".format(n_train, n_test))
-        print("max_step: {}".format(max_steps))
+        # print("----- Environment Setup -----")
+        # print("n_obs_steps: {}, n_action_steps: {}".format(n_obs_steps, n_action_steps))
+        # print("n_train: {},     n_test: {}".format(n_train, n_test))
+        # print("max_step: {}".format(max_steps))
 
         # cfg of video output
         # train

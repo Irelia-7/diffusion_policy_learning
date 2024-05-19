@@ -80,8 +80,8 @@ class TransformerForDiffusion(ModuleAttrMixin):
                 )
             # decoder
             # print("d_dropout_attn: {}".format(p_drop_attn))
-            print("------ Decoder_Layer ------")
-            print(f"d_model: {n_emb}, nhead: {n_head}, dropout: {p_drop_attn}\n")
+            # print("------ Decoder_Layer ------")
+            # print(f"d_model: {n_emb}, nhead: {n_head}, dropout: {p_drop_attn}\n")
             decoder_layer = nn.TransformerDecoderLayer(
                 d_model=n_emb,
                 nhead=n_head,

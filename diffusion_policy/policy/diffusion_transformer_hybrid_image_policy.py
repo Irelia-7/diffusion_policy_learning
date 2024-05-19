@@ -199,7 +199,7 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
             generator=generator)
     
         # set step values
-        print(f"timesteps: {self.num_inference_steps}")
+        # print(f"timesteps: {self.num_inference_steps}")
         scheduler.set_timesteps(self.num_inference_steps)
         with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA]) as prof:
             for t in scheduler.timesteps:
@@ -220,8 +220,8 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
                     generator=generator,
                     **kwargs
                     ).prev_sample
-        print(prof.key_averages().table(sort_by="self_cuda_time_total"))
-        print(prof)
+        # print(prof.key_averages().table(sort_by="self_cuda_time_total"))
+        # print(prof)
         
         
         # condition_mask is all False
