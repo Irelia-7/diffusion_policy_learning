@@ -408,9 +408,5 @@ class DiffusionTransformerHybridImagePolicy(BaseImagePolicy):
             target = trajectory
         else:
             raise ValueError(f"Unsupported prediction type {pred_type}")
-
-        loss = F.mse_loss(pred, target, reduction='none')
-        loss = loss * loss_mask.type(loss.dtype)
-        loss = reduce(loss, 'b ... -> b (...)', 'mean')
-        loss = loss.mean()
+        loss = F.mse_loss(pred, target, reduction='mean')
         return loss
