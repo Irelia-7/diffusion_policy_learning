@@ -8,6 +8,7 @@ models
 data_local
 .vscode
 _wandb
+pusht_real.zip
 
 # learning
 pusht_transformer_learn.ipynb

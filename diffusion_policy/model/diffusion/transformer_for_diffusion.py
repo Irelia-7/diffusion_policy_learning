@@ -329,6 +329,7 @@ class TransformerForDiffusion(ModuleAttrMixin):
             position_embeddings = self.cond_pos_emb[
                 :, :tc, :
             ]  # each position maps to a (learnable) vector
+            print("position_embeddings: {}".format(position_embeddings.shape))
             # print("position_embeddings: {}".format(position_embeddings.shape))
             x = self.drop(cond_embeddings + position_embeddings)
             x = self.encoder(x)
